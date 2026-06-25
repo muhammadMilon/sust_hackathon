@@ -110,7 +110,11 @@ npm test
 
 ## Deployment runbook
 
-The service is a standard long-running Node HTTP server. It binds to `process.env.PORT` (falls back to `3000`) and `0.0.0.0`. Pick **any one** of the options below.
+Two shapes are supported from the **same repo**:
+- a **long-running Node server** (`src/server.js`, binds `process.env.PORT` / `0.0.0.0`) for Render, Railway, Fly, Docker, EC2; and
+- **serverless functions** (`api/*.js` + [`vercel.json`](vercel.json)) for Vercel.
+
+Pick **any one** of the options below.
 
 ### Option A — Render (recommended, free, `render.yaml` included)
 1. Push this repo to GitHub.
@@ -120,19 +124,29 @@ The service is a standard long-running Node HTTP server. It binds to `process.en
 
 *(No secrets required. To enable the optional LLM, add `USE_LLM=true` and `ANTHROPIC_API_KEY` as environment variables in the Render dashboard.)*
 
-### Option B — Railway
+### Option B — Vercel (serverless, directly from GitHub) ✅
+This repo ships with `api/health.js`, `api/sort-ticket.js`, and [`vercel.json`](vercel.json) that rewrites `/health` → `/api/health` and `/sort-ticket` → `/api/sort-ticket`, so the endpoints live at the **base URL** (not under `/api`).
+1. Push this repo to GitHub.
+2. [vercel.com](https://vercel.com) → **Add New… → Project** → **Import** your GitHub repo.
+3. Framework Preset: **Other**. Leave Build & Output settings empty (no build step needed). Click **Deploy**.
+4. Base URL is `https://<project>.vercel.app`. Verify `…/health` and `POST …/sort-ticket`.
+
+*(Optional LLM: add `USE_LLM=true` + `ANTHROPIC_API_KEY` in Project → Settings → Environment Variables, then redeploy.)*
+CLI alternative: `npm i -g vercel && vercel --prod`.
+
+### Option C — Railway
 1. Push to GitHub → Railway → **New Project** → **Deploy from GitHub repo**.
 2. Railway auto-detects Node and runs `npm start` (a [`Procfile`](Procfile) is also provided).
 3. **Settings → Networking → Generate Domain** to get an HTTPS URL. Confirm `/health`.
 
-### Option C — Fly.io (Docker, `fly.toml` included)
+### Option D — Fly.io (Docker, `fly.toml` included)
 ```bash
 fly launch --no-deploy     # claim an app name; keep the provided fly.toml
 fly deploy
 fly open /health
 ```
 
-### Option D — Docker (Fly, EC2, Poridhi Lab, any VM)
+### Option E — Docker (Fly, EC2, Poridhi Lab, any VM)
 ```bash
 docker build -t queuestorm .
 docker run -p 3000:3000 queuestorm
@@ -140,7 +154,7 @@ docker run -p 3000:3000 queuestorm
 ```
 On a VM (EC2 / Poridhi Lab): install Docker, run the two commands above, then put it behind HTTPS (e.g. an Nginx/Caddy reverse proxy or the platform's TLS load balancer).
 
-### Option E — Bare VM without Docker
+### Option F — Bare VM without Docker
 ```bash
 git clone <repo-url> && cd <repo>
 npm ci --omit=dev
@@ -162,17 +176,23 @@ See [`.env.example`](.env.example). Real secrets go in platform env vars / a git
 ## Project layout
 ```
 src/
-  server.js     # HTTP server entry (binds PORT, graceful shutdown)
-  app.js        # Express app: routes, validation, orchestration
+  server.js     # HTTP server entry for long-running hosts (binds PORT)
+  app.js        # Express layer: routes + CORS, delegates to handler.js
+  handler.js    # transport-agnostic core: validation + orchestration
   classify.js   # rules engine — the heart of the grade
   sanitize.js   # hard safety guard for agent_summary
   llm.js        # optional Claude path (disabled by default)
+api/            # Vercel serverless entrypoints (reuse src/handler.js)
+  health.js         # GET /health
+  sort-ticket.js    # POST /sort-ticket
 prompts/
   system_prompt.txt  # system prompt used only by the optional LLM path
 test/
   classify.test.js   # unit tests (classifier)
-  api.test.js        # HTTP integration tests (both endpoints)
-Dockerfile · render.yaml · fly.toml · Procfile   # deploy targets
+  api.test.js        # HTTP integration tests (Express, both endpoints)
+  vercel.test.js     # serverless handler tests (mock req/res)
+vercel.json   # routes /health & /sort-ticket to the api/ functions
+Dockerfile · render.yaml · fly.toml · Procfile   # other deploy targets
 ```
 
 ## Known issues / notes
