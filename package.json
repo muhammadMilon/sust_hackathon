@@ -1,0 +1,26 @@
+{
+  "name": "queuestorm-ticket-triage",
+  "version": "1.0.0",
+  "description": "QueueStorm — CRM ticket triage microservice for the SUST CSE Carnival 2026 / bKash Codex Community Hackathon mock preliminary.",
+  "type": "commonjs",
+  "main": "src/server.js",
+  "engines": {
+    "node": ">=18"
+  },
+  "scripts": {
+    "start": "node src/server.js",
+    "dev": "node --watch src/server.js",
+    "test": "node --test"
+  },
+  "dependencies": {
+    "express": "^4.19.2"
+  },
+  "keywords": [
+    "ticket-triage",
+    "classification",
+    "bkash",
+    "hackathon",
+    "fintech"
+  ],
+  "license": "MIT"
+}

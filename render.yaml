@@ -1,0 +1,13 @@
+# Render Blueprint — deploy with one click via "New + > Blueprint".
+services:
+  - type: web
+    name: queuestorm-ticket-triage
+    runtime: node
+    plan: free
+    region: singapore
+    buildCommand: npm ci
+    startCommand: npm start
+    healthCheckPath: /health
+    envVars:
+      - key: NODE_VERSION
+        value: "20"
