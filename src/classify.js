@@ -97,7 +97,8 @@ function extractAmount(text) {
 
 function formatAmount(value) {
   const n = Number.isInteger(value) ? value : Number(value.toFixed(2));
-  return `${n.toLocaleString('en-US')} BDT`;
+  // Plain digits (no thousands separator) to match the brief's "5000 BDT" style.
+  return `${n} BDT`;
 }
 
 /** Decide whether the message describes a phishing / social-engineering case. */
